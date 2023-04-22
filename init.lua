@@ -53,6 +53,11 @@ require("packer").startup(function(use)
 			require("nvim-tree").setup({
 				update_focused_file = {
 					enable = true
+				},
+
+				git = {
+					enable = false,
+					ignore = true
 				}
 			})
 
@@ -117,13 +122,10 @@ require("packer").startup(function(use)
 					lualine_c = {}, -- Remove file name (present in tabline)
 					lualine_x = {}, -- Remove file encoding
 
-					-- Set "Y" section to the file size
+					-- Set "Y" section to diagnostics
 					lualine_y = {
 						{
-							'filesize',
-							fmt = function(size)
-								return size:upper()
-							end
+							'diagnostics',
 						}
  					},
 
@@ -288,6 +290,7 @@ end)
 -- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---
 -- ====================================================================================================================================
 
-vim.api.nvim_set_keymap("n", "<Tab>", ":bn<CR>", {})
-vim.api.nvim_set_keymap("n", "<C-w>", ":bd<CR>", {})
+vim.api.nvim_set_keymap("n", "<Tab>", ":bn<CR>", {}) -- Tab switches between open buffers
+vim.api.nvim_set_keymap("n", "<C-w>", ":bd<CR>", {}) -- Ctrl + w closes the current buffer
+vim.api.nvim_set_keymap("n", "<C-s>", ":w<CR>", {}) -- Ctrl + s saves the current buffer
 
