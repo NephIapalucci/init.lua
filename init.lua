@@ -20,7 +20,7 @@ vim.opt.number = true -- Show line numbers
 vim.opt.relativenumber = true -- Make line numbers relative to cursor position
 vim.opt.wrap = false -- Disable word wrapping
 vim.opt.tabstop = 4 -- Set tab size to 4
-vim.opt.shiftwidth = 0 -- Use tabstop for automatic tabs
+vim.opt.shiftwidth = 4 -- Use tabstop for automatic tabs
 vim.opt.showcmd = false -- Don't show keypressed
 vim.opt.termguicolors = true -- Use true color in the terminal
 
@@ -127,7 +127,7 @@ require("packer").startup(function(use)
 						{
 							'diagnostics',
 						}
- 					},
+					},
 
 					-- Set the "Z" section to be the line count
 					lualine_z = {
@@ -145,9 +145,11 @@ require("packer").startup(function(use)
 
 	-- Language Server support for diagnostics
 	use {
-		"williamboman/mason.nvim",
+		"VonHeikemen/lsp-zero.nvim",
+		branch = "v2.x",
 		run = ":MasonUpdate",
 		requires = {
+			"williamboman/mason.nvim",
 			"williamboman/mason-lspconfig",
 			"hrsh7th/cmp-nvim-lsp",
 			"hrsh7th/nvim-cmp",
@@ -159,7 +161,8 @@ require("packer").startup(function(use)
 				ensure_installed = {
 					'rust_analyzer',
 					'tsserver',
-					'lua_ls'
+					'lua_ls',
+					'zls'
 				},
 			})
 
@@ -176,6 +179,12 @@ require("packer").startup(function(use)
 					})
 				end,
 			})
+
+			local zero = require("lsp-zero").preset({})
+			zero.on_attach(function(_client, bufnr)
+				zero.default_keymaps({buffer = bufnr})
+			end)
+			zero.setup()
 		end
 	}
 
@@ -220,8 +229,11 @@ require("packer").startup(function(use)
 			})
 			require("lsp_lines").setup()
 			vim.cmd[[
-			hi LspDiagnosticsVirtualTextWarning guifg=DarkYellow ctermfg=DarkYellow
-			hi DiagnosticVirtualTextWarn guifg=DarkYellow ctermfg=DarkYellow
+			hi LspDiagnosticsVirtualTextWarning guifg=#e2b86b
+			hi DiagnosticVirtualTextWarn guifg=#e2b86b 
+
+			hi LspDiagnosticsVirtualTextError guifg=#e55561 ctermfg=15
+			hi DiagnosticVirtualTextError guifg=#e55561 ctermfg=15
 			]]
 		end,
 	})
@@ -281,8 +293,8 @@ require("packer").startup(function(use)
 
 	-- Finish bootstrapping
 	if packer_bootstrap then
-    	require('packer').sync()
-  	end
+		require('packer').sync()
+	end
 
 end)
 
