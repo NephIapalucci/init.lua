@@ -8,13 +8,13 @@ Neph Iapalucci's init.lua configuration for Neovim.
 
 -- ]]
 
-vim = vim
-
 -- =========================================================================================================================================================
 -- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- O
 -- =========================================================================================================================================================
 
 vim.opt.cursorline = true -- Highlight line that cursor is on
+vim.opt.hlsearch = false -- Don't highlight searches
+vim.opt.incsearch = true -- Incrementally highlight searches
 vim.opt.mouse = nil -- Disable mouse
 vim.opt.number = true -- Show line numbers
 vim.opt.relativenumber = true -- Make line numbers relative to cursor position
@@ -23,6 +23,14 @@ vim.opt.tabstop = 4 -- Set tab size to 4
 vim.opt.shiftwidth = 4 -- Use tabstop for automatic tabs
 vim.opt.showcmd = false -- Don't show keypressed
 vim.opt.termguicolors = true -- Use true color in the terminal
+
+-- Enable word wrapping for text files
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "markdown", "text" },
+	callback = function()
+		vim.opt_local.wrap = true
+	end
+})
 
 -- =========================================================================================================================================================
 -- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- P
@@ -34,8 +42,7 @@ local packer_bootstrap = (function()
 	if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
 		vim.fn.system({ 'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path })
 		vim.cmd [[packadd packer.nvim]]
-		return true
-	end
+		return true end
 	return false
 end)()
 
@@ -156,7 +163,16 @@ require("packer").startup(function(use)
 			"neovim/nvim-lspconfig"
 		},
 		config = function()
-			require("mason").setup()
+			require("mason").setup({
+				ui = {
+					icons = {
+						package_installed = "✓",
+						package_pending = "",
+						package_uninstalled = ""
+					}
+				}
+			})
+
 			require("mason-lspconfig").setup({
 				ensure_installed = {
 					'rust_analyzer',
@@ -181,6 +197,15 @@ require("packer").startup(function(use)
 			})
 
 			local zero = require("lsp-zero").preset({})
+			zero.nvim_workspace() -- Fix Undefined global 'vim'
+
+			-- Set gutter icons
+			zero.set_sign_icons({
+				error = "",
+				warn = "",
+				hint = "",
+				info = ""
+			})
 			zero.on_attach(function(_client, bufnr)
 				zero.default_keymaps({buffer = bufnr})
 			end)
@@ -211,7 +236,7 @@ require("packer").startup(function(use)
 		run = ':TSUpdate',
 		config = function()
 			require('nvim-treesitter.configs').setup({
-				ensure_installed = { "c", "lua", "rust", "javascript", "typescript", "racket" },
+				ensure_installed = { "c", "lua", "rust", "javascript", "typescript", "racket", "zig", "markdown" },
 				sync_install = false,
 				highlight = {
 					enable = true,
@@ -289,6 +314,25 @@ require("packer").startup(function(use)
 			{ 'hoob3rt/lualine.nvim', opt = true },
 			{ 'kyazdani42/nvim-web-devicons', opt = true }
 		}
+	}
+
+	-- Nerd icon picker for writing text
+	use {
+		"ziontee113/icon-picker.nvim",
+		requires = { "stevearc/dressing.nvim" },
+		config = function()
+			require("icon-picker").setup({
+				disable_legacy_commands = true
+			})
+		end
+	}
+
+	-- Highlight hex colors in the editor
+	use {
+		"brenoprata10/nvim-highlight-colors",
+		config = function()
+			require("nvim-highlight-colors").setup({})
+		end
 	}
 
 	-- Finish bootstrapping
