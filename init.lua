@@ -24,6 +24,8 @@ vim.opt.shiftwidth = 4 -- Use tabstop for automatic tabs
 vim.opt.showcmd = false -- Don't show keypressed
 vim.opt.termguicolors = true -- Use true color in the terminal
 
+vim.cmd[[set fillchars=vert:\ ]]
+
 -- Enable word wrapping for text files
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "markdown", "text" },
@@ -156,11 +158,11 @@ require("packer").startup(function(use)
 		branch = "v2.x",
 		run = ":MasonUpdate",
 		requires = {
-			"williamboman/mason.nvim",
-			"williamboman/mason-lspconfig",
-			"hrsh7th/cmp-nvim-lsp",
-			"hrsh7th/nvim-cmp",
-			"neovim/nvim-lspconfig"
+			"williamboman/mason.nvim", -- LSP Installer
+			"williamboman/mason-lspconfig", -- LSP Configurer
+			"hrsh7th/cmp-nvim-lsp", -- Autocomplete
+			"hrsh7th/nvim-cmp", -- More auto complete
+			"neovim/nvim-lspconfig" -- LSP Configuration
 		},
 		config = function()
 			require("mason").setup({
@@ -215,17 +217,9 @@ require("packer").startup(function(use)
 
 	-- One Dark theme highlighting
 	use {
-		'navarasu/onedark.nvim',
+		'NephIapalucci/onedarker-pro.nvim',
 		config = function()
 			local onedark = require("onedark")
-			onedark.setup({
-				style = 'darker', -- Set the style to darker
-
-				-- Remove italic comments
-				code_style = {
-					comments = 'none',
-				},
-			})
 			onedark.load()
 		end
 	}
