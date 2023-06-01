@@ -33,56 +33,77 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 vim.g.zig_fmt_autosave = false -- Disable Zig autoformatting which for some reason converts my enums into massive one-liners
+vim.g.rustfmt_autosave = true -- Enable Rust formatting on save
+
+vim.g.mapleader = " " -- Set leader to space
 
 -- =========================================================================================================================================================
 -- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- Plugins ---------- P
 -- =========================================================================================================================================================
 
--- Bootstrapping: Automatically install Packer if it doesn't exist
-local packer_bootstrap = (function()
-	local install_path = vim.fn.stdpath('data')..'/site/pack/packer/start/packer.nvim'
-	if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
-		vim.fn.system({ 'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path })
-		vim.cmd [[packadd packer.nvim]]
-		return true
-	end
-	return false
-end)()
+-- Bootstrapping: Automatically install Lazy.nvim if it doesn't exist
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not vim.loop.fs_stat(lazypath) then
+	vim.fn.system({
+		"git",
+		"clone",
+		"--filter=blob:none",
+		"https://github.com/folke/lazy.nvim.git",
+		"--branch=stable",
+		lazypath
+	})
+end
+vim.opt.rtp:prepend(lazypath)
 
 -- Start the plugin setup
-require("packer").startup(function(use)
+require("lazy").setup({
 
-	-- Package manager
-	use({'wbthomason/packer.nvim'})
-
-	-- File tree
-	use({
-		'nvim-tree/nvim-tree.lua',
-		requires = { 'nvim-tree/nvim-web-devicons' },
+	{
+		"nvim-neo-tree/neo-tree.nvim",
+		branch = "v2.x",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons",
+			"MunifTanjim/nui.nvim"
+		},
 		config = function()
-			-- Start the file tree with default settings
-			require("nvim-tree").setup({
-				update_focused_file = {
-					enable = true
+			require("neo-tree").setup({
+				close_if_last_window = true,
+				enable_diagnostics = true,
+				window = {
+					position = "left",
+					width = 35
 				},
-
-				-- Disable git integration
-				git = {
-					enable = false,
-					ignore = true
+				default_component_configs = {
+					name = {
+						use_git_status_colors = false
+					},
+					icon = {
+						folder_empty = "",
+						folder_empty_open = "" 
+					},
+					modified = {
+						symbol = "ﱣ "
+					}
 				}
 			})
 
-			-- Automatically close when file tree is the last buffer remaining
-			vim.api.nvim_create_autocmd("BufEnter", {
-				command = "if winnr('$') == 1 && bufname() == 'NvimTree_' . tabpagenr() | quit | endif",
-				nested = true
+			vim.api.nvim_create_autocmd("VimEnter", {
+				callback = function(args)
+					if vim.fn.expand("%:p") ~= "" then
+						vim.api.nvim_del_autocmd(args.id)
+						vim.cmd("Neotree")
+						vim.schedule(function()
+							vim.cmd("wincmd p")
+						end)
+					end
+				end
 			})
 		end
-	})
+	},
 
 	-- Add missing LSP diagnostic colors
-	use({
+	{
 		'folke/lsp-colors.nvim',
 		config = function()
 			require("lsp-colors").setup({
@@ -93,12 +114,12 @@ require("packer").startup(function(use)
 			})
 
 		end
-	})
+	},
 
 	-- Pretty bottom status bar
-	use({
+	{
 		'nvim-lualine/lualine.nvim',
-		requires = { 'nvim-tree/nvim-web-devicons' },
+		dependencies = { 'nvim-tree/nvim-web-devicons' },
 		config = function()
 			require("lualine").setup({
 				options = {
@@ -121,7 +142,9 @@ require("packer").startup(function(use)
 						{
 							'filetype',
 							fmt = function(type)
-								return type:sub(1, 1):upper() .. type:sub(2, type:len())
+								local formatted = type:sub(1, 1):upper() .. type:sub(2, type:len())
+								if formatted == "Cs" then formatted = "C#" end
+								return formatted
 							end
 						}
 					},
@@ -137,7 +160,7 @@ require("packer").startup(function(use)
 								error = " ",
 								hint = " ",
 								info = "  "
-							}
+							},
 						}
 					},
 
@@ -153,14 +176,19 @@ require("packer").startup(function(use)
 				}
 			})
 		end
-	})
+	},
 
 	-- Language Server support for diagnostics
-	use({
+	{
 		"VonHeikemen/lsp-zero.nvim",
 		branch = "v2.x",
-		run = ":MasonUpdate",
-		requires = {
+		build = function()
+			vim.schedule(function()
+				vim.cmd(":MasonUpdate")
+			end)
+		end,
+		dependencies = {
+			"simrat39/rust-tools.nvim", -- Rust LSP tools
 			"williamboman/mason.nvim", -- LSP Installer
 			"williamboman/mason-lspconfig", -- LSP Configurer
 			"hrsh7th/cmp-nvim-lsp", -- Autocomplete
@@ -183,13 +211,31 @@ require("packer").startup(function(use)
 
 			require("mason-lspconfig").setup({
 				ensure_installed = {
-					"clangd",
-					"pyright",
-					'rust_analyzer',
-					'tsserver',
-					'lua_ls',
-					'zls'
+					"bashls", -- Bash
+					"clangd", -- C
+					"csharp_ls", -- C#
+					"html", -- HTML
+					"pyright", -- Python
+					'rust_analyzer', -- Rust
+					'tsserver', -- TypeScript
+					'lua_ls', -- Lua
+					'zls' -- Zig
 				},
+			})
+
+			require("rust-tools").setup({
+				inlay_hints = {
+					auto = true
+				},
+				server = {
+					settings = {
+						["rust-analyzer"] = {
+							checkOnSave = {
+								command = "clippy"
+							}
+						}
+					}
+				}
 			})
 
 			local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
@@ -199,6 +245,14 @@ require("packer").startup(function(use)
 
 			require('mason-lspconfig').setup_handlers({
 				function(server_name)
+					if server_name == "rust-analyzer" then
+						lspconfig[server_name] = {
+							checkOnSave = {
+								command = "clippy"
+							}
+						}
+						return
+					end
 					lspconfig[server_name].setup({
 						on_attach = lsp_attach,
 						capabilities = lsp_capabilities,
@@ -254,24 +308,30 @@ require("packer").startup(function(use)
 			end)
 			zero.setup()
 		end
-	})
+	},
 
 	-- One Dark theme highlighting
-	use({
+	{
 		'NephIapalucci/onedarker-pro.nvim',
 		config = function()
 			local onedark = require("onedark")
 			onedark.load()
-		end
-	})
+		end,
+		priority = 1000
+	},
 
 	-- Language parser for better semantic highlighting
-	use({
+	{
 		'nvim-treesitter/nvim-treesitter',
-		run = ':TSUpdate',
+		build = function()
+			vim.schedule(function()
+				vim.cmd(':TSUpdate')
+			end)
+		end,
 		config = function()
 			require('nvim-treesitter.configs').setup({
 				ensure_installed = {
+					"bash",
 					"c",
 					"lua",
 					"rust",
@@ -288,10 +348,10 @@ require("packer").startup(function(use)
 				}
 			})
 		end
-	})
+	},
 
 	-- Show diagnostics on their own lines that point at the source character
-	use({
+	{
 		"https://git.sr.ht/~whynothugo/lsp_lines.nvim",
 		config = function()
 			vim.diagnostic.config({
@@ -306,17 +366,10 @@ require("packer").startup(function(use)
 			hi DiagnosticVirtualTextError guifg=#e55561 ctermfg=15
 			]]
 		end,
-	})
-
-	-- Fuzzy finder
-	use({
-		'nvim-telescope/telescope.nvim', tag = '0.1.1',
-		requires = { {'nvim-lua/plenary.nvim'} },
-		config = function() require("telescope").setup({}) end
-	})
+	},
 
 	-- Top tabline to show buffers
-	use({
+	{
 		'kdheepak/tabline.nvim',
 		config = function()
 			require'tabline'.setup {
@@ -335,51 +388,56 @@ require("packer").startup(function(use)
 			set sessionoptions+=tabpages,globals " store tabpages and globals in session
 			]]
 		end,
-		requires = {
-			{ 'hoob3rt/lualine.nvim', opt = true },
-			{ 'kyazdani42/nvim-web-devicons', opt = true }
+		dependencies = {
+			{ 'nvim-lualine/lualine.nvim' },
+			{ 'nvim-tree/nvim-web-devicons' }
 		}
-	})
+	},
 
 	-- Nerd icon picker for writing text
-	use({
+	{
 		"ziontee113/icon-picker.nvim",
-		requires = { "stevearc/dressing.nvim" },
+		dependencies = {
+			"stevearc/dressing.nvim" ,
+			"nvim-telescope/telescope.nvim"
+		},
 		config = function()
 			require("icon-picker").setup({
 				disable_legacy_commands = true
 			})
 		end
-	})
+	},
 
 	-- Highlight hex colors in the editor
-	use({
+	{
 		"brenoprata10/nvim-highlight-colors",
 		config = function()
 			require("nvim-highlight-colors").setup({})
 		end
-	})
+	},
 
 	-- Run projects
-	use({
-		'~/Documents/Coding/Lua/run.nvim',
+	{
+		dir = '~/Documents/Coding/Lua/run.nvim',
 		config = function()
 			require("run").setup()
 		end
-	})
+	},
 
 	-- Live markdown preview
-	use({
+	{
 		"iamcco/markdown-preview.nvim",
-		run = function()
-			vim.fn["mkdp#util#install"]()
+		config = function()
+			vim.schedule(function()
+				vim.fn["mkdp#util#install"]()
+			end)
 		end
-	})
+	},
 
 	-- Command line improvements and message tooltips
-	use({
+	{
 		"folke/noice.nvim",
-		requires = {
+		dependencies = {
 			"MunifTanjim/nui.nvim",
 			"rcarriga/nvim-notify",
 			"rcarriga/nvim-notify"
@@ -408,35 +466,49 @@ require("packer").startup(function(use)
 				},
 			})
 		end
-	})
+	},
 
 	-- Highlight comments with TODO
-	use({
+	{
 		"folke/todo-comments.nvim",
-		requires = "nvim-lua/plenary.nvim",
+		dependencies = "nvim-lua/plenary.nvim",
 		config = function()
 			require("todo-comments").setup({})
 		end
-	})
+	},
 
-	-- Finish bootstrapping
-	if packer_bootstrap then
-		require('packer').sync()
-	end
+	-- Better UI for find and replace
+	{
+		"VonHeikemen/searchbox.nvim",
+		dependencies = {
+			{ "MunifTanjim/nui.nvim" }
+		}
+	}
+},
 
-end)
+-- Options for lazy.nvim
+{
+	ui = {
+		colorscheme = { "onedark" },
+		title = " Lazy ",
+		border = "rounded",
+		icons = {
+			start = ""
+		}
+	}
+})
 
 -- ====================================================================================================================================
 -- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---------- Mappings ---
 -- ====================================================================================================================================
 
-vim.g.mapleader = " " -- Set leader to space
 vim.keymap.set("n", "<leader><Tab>", ":bn<CR>", {}) -- Switch between open buffers
+vim.keymap.set("n", "<leader>l", ":Lazy<CR>", {})
 vim.keymap.set("n", "<leader>w", ":bd<CR>", {}) -- Closes the current buffer
 vim.keymap.set("n", "<leader>s", ":w<CR>", {}) -- Saves the current buffer
 vim.keymap.set("n", "<leader>r", ":NvimRun<CR>", {}) -- Runs the current project
 vim.keymap.set("n", "<leader>y", ":IconPickerNormal<CR>", {}) -- Picks icons and glyphs
-vim.keymap.set("n", "<leader>ef", ":NvimTreeFocus<CR>", {}) -- Focus file tree
+vim.keymap.set("n", "<leader>ef", ":Neotree<CR>", {}) -- Focus file tree
 vim.keymap.set("n", "<leader>et", ":NvimTreeToggle<CR>", {}) -- Toggle file tree
 vim.keymap.set("n", "<leader>eu", ":wincmd p<CR>", {}) -- Unfocus file tree
-vim.keymap.set("n", "<leader>ff", require("telescope.builtin").find_files, {}) -- Find files
+vim.keymap.set("n", "<leader>f", ":SearchBoxIncSearch<CR>", {}) -- Search within file
