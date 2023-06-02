@@ -6,6 +6,18 @@ Neph Iapalucci's Neovim configuration, all in one file.
 
 ![example image](./docs/example.png)
 
+## Install
+
+Linux/MacOS: 
+```bash
+git clone https://github.com/NephIapalucci/init.lua ~/.config/nvim --depth 1 && nvim
+```
+
+Windows:
+```powershell
+git clone https://github.com/NephIapalucci/init.lua $HOME\\AppData\\Local\\nvim --depth 1 && nvim
+```
+
 ## Why One File?
 
 It's not uncommon that people ask why my entire configuration is in one file instead of being split into modules. Truthfully, I don't believe my configuration is complex enough that it really needs to be. My general rule of thumb (in any program) is that files should max out at about 1000 lines, and my configuration is nowhere near that. Keeping it in a single file makes it convenient to move around and send wherever I need to; My entire configuration is a copy-paste away.
