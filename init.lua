@@ -24,7 +24,7 @@ vim.opt.showcmd = false -- Don't show keypressed
 vim.opt.termguicolors = true -- Use true color in the terminal
 vim.cmd[[set fillchars=vert:\ ]] -- Remove line between file tree and main buffer
 
--- Enable word wrapping for text files
+-- Enable word wrapping for text files such as markdown or text
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "markdown", "text" },
 	callback = function()
@@ -58,6 +58,7 @@ vim.opt.rtp:prepend(lazypath)
 -- Start the plugin setup
 require("lazy").setup({
 
+	-- File tree explorer
 	{
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v2.x",
@@ -80,7 +81,7 @@ require("lazy").setup({
 					},
 					icon = {
 						folder_empty = "",
-						folder_empty_open = "" 
+						folder_empty_open = ""
 					},
 					modified = {
 						symbol = "ﱣ "
@@ -122,9 +123,7 @@ require("lazy").setup({
 		dependencies = { 'nvim-tree/nvim-web-devicons' },
 		config = function()
 			require("lualine").setup({
-				options = {
-					disabled_filetypes = { 'NvimTree' }
-				},
+				extensions = { "neo-tree" },
 				sections = {
 
 					-- Set mode name to Camelcase
@@ -178,7 +177,7 @@ require("lazy").setup({
 		end
 	},
 
-	-- Language Server support for diagnostics
+	-- Language Server support for diagnostics, autocomplete, etc.
 	{
 		"VonHeikemen/lsp-zero.nvim",
 		branch = "v2.x",
@@ -189,6 +188,7 @@ require("lazy").setup({
 		end,
 		dependencies = {
 			"simrat39/rust-tools.nvim", -- Rust LSP tools
+			"rust-lang/rust.vim", -- Up-to-date Rust support
 			"williamboman/mason.nvim", -- LSP Installer
 			"williamboman/mason-lspconfig", -- LSP Configurer
 			"hrsh7th/cmp-nvim-lsp", -- Autocomplete
@@ -223,21 +223,6 @@ require("lazy").setup({
 				},
 			})
 
-			require("rust-tools").setup({
-				inlay_hints = {
-					auto = true
-				},
-				server = {
-					settings = {
-						["rust-analyzer"] = {
-							checkOnSave = {
-								command = "clippy"
-							}
-						}
-					}
-				}
-			})
-
 			local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
 			local lsp_attach = function() end -- Mappings
 
@@ -245,14 +230,6 @@ require("lazy").setup({
 
 			require('mason-lspconfig').setup_handlers({
 				function(server_name)
-					if server_name == "rust-analyzer" then
-						lspconfig[server_name] = {
-							checkOnSave = {
-								command = "clippy"
-							}
-						}
-						return
-					end
 					lspconfig[server_name].setup({
 						on_attach = lsp_attach,
 						capabilities = lsp_capabilities,
@@ -260,8 +237,38 @@ require("lazy").setup({
 				end,
 			})
 
+			-- Set up Rust format on save with clippy
+			lspconfig.rust_analyzer.setup({
+				settings = {
+					['rust-analyzer'] = {
+						checkOnSave = {
+							allFeatures = true,
+							overrideCommand = {
+								"cargo", "clippy",
+									"--workspace",
+									"--message-format=json",
+									"--all-targets",
+									"--all-features"
+							}
+						}
+					}
+				}
+			})
+
+			-- Set up Lua to ignore vim as a global
+			lspconfig.lua_ls.setup({
+				settings = {
+					Lua = {
+						diagnostics = {
+							globals = { "vim" }
+						}
+					}
+				}
+			})
+
 			local cmp = require("cmp")
 
+			-- Set up autocomplete for Vim commands
 			cmp.setup.cmdline(":", {
 				mapping = cmp.mapping.preset.cmdline(),
 				sources = cmp.config.sources({
@@ -277,6 +284,7 @@ require("lazy").setup({
 				})
 			})
 
+			-- Set up autocomplete for Vim finding
 			cmp.setup.cmdline("/", {
 				mapping = cmp.mapping.preset.cmdline(),
 				sources = {
@@ -284,7 +292,7 @@ require("lazy").setup({
 				}
 			})
 
-
+			-- Set up autocomplete for files 
 			cmp.setup({
 				window = {
 					completion = {
@@ -294,7 +302,6 @@ require("lazy").setup({
 			})
 
 			local zero = require("lsp-zero").preset({})
-			zero.nvim_workspace() -- Fix Undefined global 'vim'
 
 			-- Set gutter icons
 			zero.set_sign_icons({
@@ -304,13 +311,13 @@ require("lazy").setup({
 				info = ""
 			})
 			zero.on_attach(function(_, bufnr)
-				zero.default_keymaps({buffer = bufnr})
+				zero.default_keymaps({ buffer = bufnr })
 			end)
 			zero.setup()
 		end
 	},
 
-	-- One Dark theme highlighting
+	-- One Dark theme syntax highlighting
 	{
 		'NephIapalucci/onedarker-pro.nvim',
 		config = function()
@@ -333,6 +340,7 @@ require("lazy").setup({
 				ensure_installed = {
 					"bash",
 					"c",
+					"go",
 					"lua",
 					"rust",
 					"java",
@@ -340,7 +348,8 @@ require("lazy").setup({
 					"typescript",
 					"racket",
 					"zig",
-					"markdown"
+					"markdown",
+					"python"
 				},
 				sync_install = false,
 				highlight = {
@@ -368,7 +377,7 @@ require("lazy").setup({
 		end,
 	},
 
-	-- Top tabline to show buffers
+	-- Top tabline to show open buffers
 	{
 		'kdheepak/tabline.nvim',
 		config = function()
@@ -394,7 +403,7 @@ require("lazy").setup({
 		}
 	},
 
-	-- Nerd icon picker for writing text
+	-- Icon picker for writing icons such as      etc
 	{
 		"ziontee113/icon-picker.nvim",
 		dependencies = {
@@ -408,7 +417,7 @@ require("lazy").setup({
 		end
 	},
 
-	-- Highlight hex colors in the editor
+	-- Highlight colors in the editor such as #4a08a9, rgb(0, 255, 255), and hsl(150, 100, 50)
 	{
 		"brenoprata10/nvim-highlight-colors",
 		config = function()
@@ -443,6 +452,8 @@ require("lazy").setup({
 			"rcarriga/nvim-notify"
 		},
 		config = function()
+
+			-- Send notifications to the bottom of the screen instead of the top
 			require("notify").setup({
 				top_down = false
 			})
@@ -456,7 +467,7 @@ require("lazy").setup({
 					}
 				},
 				cmdline = {
-					view = "cmdline"
+					view = "cmdline" -- Keep Vim commands to standard bottom CMDLine instead of middle of screen
 				},
 				presets = {
 					bottom_search = true,
@@ -468,7 +479,7 @@ require("lazy").setup({
 		end
 	},
 
-	-- Highlight comments with TODO
+	-- Highlight comments with  TODO: in them such as this, as well as FIXME and others
 	{
 		"folke/todo-comments.nvim",
 		dependencies = "nvim-lua/plenary.nvim",
@@ -507,8 +518,13 @@ vim.keymap.set("n", "<leader>l", ":Lazy<CR>", {})
 vim.keymap.set("n", "<leader>w", ":bd<CR>", {}) -- Closes the current buffer
 vim.keymap.set("n", "<leader>s", ":w<CR>", {}) -- Saves the current buffer
 vim.keymap.set("n", "<leader>r", ":NvimRun<CR>", {}) -- Runs the current project
-vim.keymap.set("n", "<leader>y", ":IconPickerNormal<CR>", {}) -- Picks icons and glyphs
+vim.keymap.set("n", "<leader>m", ":IconPickerNormal<CR>", {}) -- Picks icons and glyphs
 vim.keymap.set("n", "<leader>ef", ":Neotree<CR>", {}) -- Focus file tree
 vim.keymap.set("n", "<leader>et", ":NvimTreeToggle<CR>", {}) -- Toggle file tree
 vim.keymap.set("n", "<leader>eu", ":wincmd p<CR>", {}) -- Unfocus file tree
 vim.keymap.set("n", "<leader>f", ":SearchBoxIncSearch<CR>", {}) -- Search within file
+
+-- Lsp Mappings
+vim.keymap.set("n", "<leader>ld", vim.lsp.buf.definition, {}) -- Jump to definition
+vim.keymap.set("n", "<leader>ly", vim.lsp.buf.code_action, {}) -- Code Actions
+vim.keymap.set("n", "<leader>lr", vim.lsp.buf.rename, {}) -- Rename refactoring
