@@ -1,15 +1,14 @@
 -- =========================================================================================================================================================
--- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ----
--- =========================================================================================================================================================
+-- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---------- init.lua ---- =========================================================================================================================================================
 
 --[[
 
 Neph Iapalucci's init.lua configuration for Neovim.
 
 -- ]]
--- =====================================================================================================================================================================
--- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options -----
--- =====================================================================================================================================================================
+---- =====================================================================================================================================================================
+---- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options ---------- Options -----
+---- =====================================================================================================================================================================
 
 vim.opt.cursorline = true -- Highlight line that cursor is on
 vim.opt.hlsearch = false -- Don't highlight searches
@@ -71,6 +70,7 @@ require("lazy").setup({
 			require("neo-tree").setup({
 				close_if_last_window = true,
 				enable_diagnostics = true,
+				enable_git_status = false,
 				window = {
 					position = "left",
 					width = 35
@@ -157,7 +157,7 @@ require("lazy").setup({
 							symbols = {
 								warn = "  ",
 								error = " ",
-								hint = " ",
+								hint = " ",
 								info = "  "
 							},
 						}
@@ -248,7 +248,18 @@ require("lazy").setup({
 									"--workspace",
 									"--message-format=json",
 									"--all-targets",
-									"--all-features"
+									"--all-features",
+									"--",
+
+									-- Warnings: Enable Clippy to warn on all of the following groups:
+									"-W", "clippy::pedantic",
+									"-W", "clippy::nursery",
+									"-W", "clippy::cargo",
+
+									-- EXCEPT these rules, which I've deemed as stupid and shall allow:
+									"-A", "clippy::trivial_regex", -- Regular expressions that can be simplified into starts_with()
+									"-A", "clippy::module_inception", -- Modules with submodules of the same name
+									"-A", "clippy::module_name_repetitions" -- Items that end with modules name
 							}
 						}
 					}
@@ -307,7 +318,7 @@ require("lazy").setup({
 			zero.set_sign_icons({
 				error = "",
 				warn = "",
-				hint = "",
+				hint = "",
 				info = ""
 			})
 			zero.on_attach(function(_, bufnr)
@@ -514,7 +525,7 @@ require("lazy").setup({
 -- ====================================================================================================================================
 
 vim.keymap.set("n", "<leader><Tab>", ":bn<CR>", {}) -- Switch between open buffers
-vim.keymap.set("n", "<leader>l", ":Lazy<CR>", {})
+vim.keymap.set("n", "<leader>z", ":Lazy<CR>", {})
 vim.keymap.set("n", "<leader>w", ":bd<CR>", {}) -- Closes the current buffer
 vim.keymap.set("n", "<leader>s", ":w<CR>", {}) -- Saves the current buffer
 vim.keymap.set("n", "<leader>r", ":NvimRun<CR>", {}) -- Runs the current project
