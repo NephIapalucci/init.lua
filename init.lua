@@ -31,6 +31,14 @@ vim.api.nvim_create_autocmd("FileType", {
 	end
 })
 
+-- Detect LLVM files
+vim.api.nvim_create_autocmd("BufRead", {
+	pattern = "*.ll",
+	callback = function()
+		vim.bo.filetype = "llvm"
+	end
+})
+
 vim.g.zig_fmt_autosave = false -- Disable Zig autoformatting which for some reason converts my enums into massive one-liners
 vim.g.rustfmt_autosave = true -- Enable Rust formatting on save
 
@@ -67,6 +75,17 @@ require("lazy").setup({
 			"MunifTanjim/nui.nvim"
 		},
 		config = function()
+			require("nvim-web-devicons").setup({
+				override = {
+					cs = { icon = "", color = "#5555FF", name = "Cs" },
+					dark = { icon = "", color = "#CCCC99", name = "Dark" },
+					docx = { icon = "", color = "#7777FF", name = "Word" },
+					ll = { icon = "", color = "#999999", name = "LLVM" },
+					pdf = { icon = "", color = "#FF4444", nme = "PDF" },
+					rkt = { icon = "λ", color = "#FF6666", name = "Racket" },
+				}
+			})
+
 			require("neo-tree").setup({
 				close_if_last_window = true,
 				enable_diagnostics = true,
@@ -243,7 +262,7 @@ require("lazy").setup({
 					['rust-analyzer'] = {
 						checkOnSave = {
 							allFeatures = true,
-							overrideCommand = {
+							overrideCommand = { -- Run clippy linting on save
 								"cargo", "clippy",
 									"--workspace",
 									"--message-format=json",
@@ -351,13 +370,13 @@ require("lazy").setup({
 				ensure_installed = {
 					"bash",
 					"c",
+					"cpp",
 					"go",
 					"lua",
 					"rust",
 					"java",
 					"javascript",
 					"typescript",
-					"racket",
 					"zig",
 					"markdown",
 					"python"
@@ -525,7 +544,7 @@ require("lazy").setup({
 -- ====================================================================================================================================
 
 vim.keymap.set("n", "<leader><Tab>", ":bn<CR>", {}) -- Switch between open buffers
-vim.keymap.set("n", "<leader>z", ":Lazy<CR>", {})
+vim.keymap.set("n", "<leader>z", ":Lazy<CR>", {}) -- Open Lazy.nvim package manager
 vim.keymap.set("n", "<leader>w", ":bd<CR>", {}) -- Closes the current buffer
 vim.keymap.set("n", "<leader>s", ":w<CR>", {}) -- Saves the current buffer
 vim.keymap.set("n", "<leader>r", ":NvimRun<CR>", {}) -- Runs the current project
@@ -534,6 +553,7 @@ vim.keymap.set("n", "<leader>ef", ":Neotree<CR>", {}) -- Focus file tree
 vim.keymap.set("n", "<leader>et", ":NvimTreeToggle<CR>", {}) -- Toggle file tree
 vim.keymap.set("n", "<leader>eu", ":wincmd p<CR>", {}) -- Unfocus file tree
 vim.keymap.set("n", "<leader>f", ":SearchBoxIncSearch<CR>", {}) -- Search within file
+vim.keymap.set("n", "<leader>nc", ":NoiceDismiss<CR>", {}) -- Dismiss notifications
 
 -- Lsp Mappings
 vim.keymap.set("n", "<leader>ld", vim.lsp.buf.definition, {}) -- Jump to definition
